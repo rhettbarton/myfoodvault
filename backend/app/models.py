@@ -65,21 +65,23 @@ class Inventory_Item(db.Model):
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     supplier = db.relationship('Supplier', backref=db.backref('inventory_items', lazy=True))
     expiration_date = db.Column(db.Date)
-    gone = db.Column(db.Boolean)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False)
+    status = db.relationship('Status', backref=db.backref('inventory_items', lazy=True))
     
     def __repr__(self):
         return f"Inventory_Item('{self.item.name}', '{self.item.category.name}', '{self.storage_location}')"
-    
 
-class TransactionHistory(db.Model):
+
+class Inventory_History(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     inventory_item_id = db.Column(db.Integer, db.ForeignKey('inventory_item.id'), nullable=False)
-    inventory_item = db.relationship('Inventory_Item', backref=db.backref('transactions', lazy=True))
-    transaction_type = db.Column(db.String(50), nullable=False)
-    new_status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False)
-    new_status = db.relationship('Status', backref=db.backref('transactions', lazy=True))
+    inventory_item = db.relationship('Inventory_Item', backref=db.backref('inventory_histories', lazy=True))
+    update_status = db.Column(db.Boolean)
+    update_quantity = db.Column(db.Boolean)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False)
+    status = db.relationship('Status', backref=db.backref('inventory_histories', lazy=True))
     quantity = db.Column(db.Integer, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self):
-        return f"TransactionHistory('{self.item.name}', '{self.transaction_type}', '{self.quantity}', '{self.timestamp}')"
+        return f"Inventory_History('{self.item.name}', '{self.transaction_type}', '{self.quantity}', '{self.timestamp}')"
