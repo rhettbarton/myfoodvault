@@ -54,6 +54,7 @@ class Supplier(db.Model):
     COSTCO = 'Costco'
     AMAZON = 'Amazon'
     FRED_MEYER = 'Fred Meyer'
+    FARMERS_MARKET = 'Farmers Market'
 
 
 class Item(db.Model):
@@ -61,7 +62,8 @@ class Item(db.Model):
     name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.Enum(Category), nullable=False)
     unit_of_measure = db.Column(db.Enum(Unit_Of_Measure), nullable=False)
-    days_to_expiration = db.Column(db.Integer, nullable=False)
+    min_shelf_life = db.Column(db.Integer, nullable=False)
+    max_shelf_life = db.Column(db.Integer, nullable=False)
     
     def __repr__(self):
         return f"Item('{self.name}', '{self.category}')"
