@@ -1,5 +1,6 @@
 import requests
 import csv
+from string import printable
 from bs4 import BeautifulSoup
 from time import sleep
 from collections import Counter
@@ -48,6 +49,8 @@ def scrape_stilltasty(index,category):
         
         #Find food tips
         tips = soup.find('div', class_='food-tips').text.strip()
+        #Remove unprintable characters
+        tips = ''.join(filter(lambda x: x in printable, tips))
         #Remove Author Info
         n = tips.find('About Our Author')
         tips = tips[:n]
@@ -191,23 +194,28 @@ except FileNotFoundError:
 ################################################################
 
 for cat in categories:
-    print(f'Now scraping {cat} food items')
-
-    list_indices = [i for i,x in enumerate(all_categories) if x == cat]
-    sub_index_numbers = [all_index_numbers[i] for i in list_indices]
-    sub_categories = [all_categories[i] for i in list_indices]
-
-    cat_trimmed = cat.replace(' ','').replace('&','').lower()
-
+    cat_trimmed = cat.replace(' ','').replace('&','').replace(',','').lower()
     food_items_filename = data_folder+f'stilltasty_food_items_{cat_trimmed}.csv'
 
-    food_list = [scrape_stilltasty(x,sub_categories[i]) for i,x in enumerate(sub_index_numbers)]
+    try:
+        open(food_items_filename, mode ='r')
+        print(f"{food_items_filename} already exists. Skipping.")
 
-    #Write to csv
-    keys = food_list[0].keys()
-    with open(food_items_filename, 'w', newline='') as output_file:
-        dict_writer = csv.DictWriter(output_file, keys)
-        dict_writer.writeheader()
-        dict_writer.writerows(food_list)
+    except FileNotFoundError:
+        print(f'Now scraping {cat} food items')
+        list_indices = [i for i,x in enumerate(all_categories) if x == cat]
+        sub_index_numbers = [all_index_numbers[i] for i in list_indices]
+        sub_categories = [all_categories[i] for i in list_indices]
 
-    print(f'All food {cat} items have been scraped and a new file written')
+        #Scrape each food item and store in a list
+        food_list = [scrape_stilltasty(x,sub_categories[i]) for i,x in enumerate(sub_index_numbers)]
+        print('Food items scraped. Proceeding to write a new file.')
+
+        #Write to csv
+        keys = food_list[0].keys()
+        with open(food_items_filename, 'w', newline='') as output_file:
+            dict_writer = csv.DictWriter(output_file, keys, escapechar='\\')
+            dict_writer.writeheader()
+            dict_writer.writerows(food_list)
+
+        print(f'All food {cat} items have been scraped and a new file written')
