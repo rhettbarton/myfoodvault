@@ -190,15 +190,24 @@ except FileNotFoundError:
 # Write to csv                                                 #
 ################################################################
 
-food_items_filename = data_folder+'stilltasty_food_items.csv'
+for cat in categories:
+    print(f'Now scraping {cat} food items')
 
-food_list = [scrape_stilltasty(all_index_numbers[i],all_categories[i]) for i in range(len(all_index_numbers))]
+    list_indices = [i for i,x in enumerate(all_categories) if x == cat]
+    sub_index_numbers = [all_index_numbers[i] for i in list_indices]
+    sub_categories = [all_categories[i] for i in list_indices]
 
-#Write to csv
-keys = food_list[0].keys()
-with open(food_items_filename, 'w', newline='') as output_file:
-    dict_writer = csv.DictWriter(output_file, keys)
-    dict_writer.writeheader()
-    dict_writer.writerows(food_list)
+    cat_trimmed = cat.replace(' ','').replace('&','').lower()
 
-print('All food items have been scraped and a new file written')
+    food_items_filename = data_folder+f'stilltasty_food_items_{cat_trimmed}.csv'
+
+    food_list = [scrape_stilltasty(x,sub_categories[i]) for i,x in enumerate(sub_index_numbers)]
+
+    #Write to csv
+    keys = food_list[0].keys()
+    with open(food_items_filename, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(food_list)
+
+    print(f'All food {cat} items have been scraped and a new file written')
