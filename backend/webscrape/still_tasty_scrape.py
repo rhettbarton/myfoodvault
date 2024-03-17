@@ -5,6 +5,12 @@ from time import sleep
 from collections import Counter
 
 
+###########################################
+# Run this file from the root directory   #
+###########################################
+
+data_folder = 'backend/webscrape/data/'
+
 ###########################
 # Define helper functions #
 ###########################
@@ -86,12 +92,33 @@ def get_index_numbers(url,target_string,get_names=False):
 ########################################################
 # Get the StillTasty food categories and their indices #
 ########################################################
-        
-url = 'https://www.stilltasty.com/Fooditems/index'
-target_string = "/searchitems/index/"
-category_index_numbers, categories = get_index_numbers(url,target_string,True)
-print(category_index_numbers)
-print(categories)        
+    
+categories_filename = data_folder+'stilltasty_food_categories.csv'
+try:
+    category_index_numbers = []
+    categories = []
+    with open(categories_filename, mode ='r') as file:    
+        csvFile = csv.reader(file)
+        next(csvFile, None) #Skip the header
+        for line in csvFile:
+            category_index_numbers.append(line[0])
+            categories.append(line[1])
+    print("Existing categories file has been read in.")
+
+except FileNotFoundError:
+    print(f"Categories file not found. Proceeding to scrape categories from StillTasty.")
+    url = 'https://www.stilltasty.com/Fooditems/index'
+    target_string = "/searchitems/index/"
+    category_index_numbers, categories = get_index_numbers(url,target_string,True)
+    cat_list = [{'index': category_index_numbers[i], 'category': categories[i]} for i in range(len(categories))]
+    #Write to csv
+    keys = cat_list[0].keys()
+    with open(categories_filename, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(cat_list)
+    print(f"Categories scrape complete and new file written.")
+     
 
 
 #######################################################
@@ -101,39 +128,60 @@ print(categories)
 
 all_index_numbers = []
 all_categories = []
-for x,i in enumerate(category_index_numbers):
-    url = f'https://www.stilltasty.com/searchitems/index/{i}'
-    #Initial results pages
-    results_pages = [f'{i}']+get_index_numbers(url,"/searchitems/index/")[0]
-    results_pages = list(set(results_pages))
-    results_pages.sort()
-    new_pages = results_pages
-    while new_pages:
-        print(new_pages)
-        for j in new_pages:         
-            print(f"Now scraping index {j}")
-            url = f'https://www.stilltasty.com/searchitems/index/{j}'
-            index_numbers = get_index_numbers(url,"/Fooditems/index/")[0]
-            if index_numbers:
-                all_index_numbers = all_index_numbers + index_numbers
-                all_categories = all_categories + [categories[x]]*len(index_numbers)
-            print(f'Completed index {j}')
-            # Pause to avoid 403 erros 
-            sleep(3)
-        #Check for additional pages
-        print('Getting new pages')
-        url = f'https://www.stilltasty.com/searchitems/index/{new_pages[-1]}'
-        results_pages = results_pages+new_pages
-        new_pages = [k for k in get_index_numbers(url,"/searchitems/index/")[0] if k not in results_pages]
-        new_pages = list(set(new_pages))
-        new_pages.sort()
+food_indices_filename = data_folder+'stilltasty_food_indices.csv'
+try:
+    with open(food_indices_filename, mode ='r') as file:    
+        csvFile = csv.reader(file)
+        next(csvFile, None) #Skip the header
+        for line in csvFile:
+            all_index_numbers.append(line[0])
+            all_categories.append(line[1])
+    print("Existing Food Indices file has been read in.")
 
-#Data check
-if not len(all_index_numbers) == len(all_categories) == len(set(all_index_numbers)):
-    raise Exception('Something is wrong with the all_index_numbers list!')
+except FileNotFoundError:
+    print(f"Food Indices file not found. Proceeding to scrape from StillTasty.")
+    for x,i in enumerate(category_index_numbers):
+        url = f'https://www.stilltasty.com/searchitems/index/{i}'
+        #Initial results pages
+        results_pages = [f'{i}']+get_index_numbers(url,"/searchitems/index/")[0]
+        results_pages = list(set(results_pages))
+        results_pages.sort()
+        new_pages = results_pages
+        while new_pages:
+            print(new_pages)
+            for j in new_pages:         
+                print(f"Now scraping index {j}")
+                url = f'https://www.stilltasty.com/searchitems/index/{j}'
+                index_numbers = get_index_numbers(url,"/Fooditems/index/")[0]
+                if index_numbers:
+                    all_index_numbers = all_index_numbers + index_numbers
+                    all_categories = all_categories + [categories[x]]*len(index_numbers)
+                print(f'Completed index {j}')
+                # Pause to avoid 403 erros 
+                sleep(3)
+            #Check for additional pages
+            print('Getting new pages')
+            url = f'https://www.stilltasty.com/searchitems/index/{new_pages[-1]}'
+            results_pages = results_pages+new_pages
+            new_pages = [k for k in get_index_numbers(url,"/searchitems/index/")[0] if k not in results_pages]
+            new_pages = list(set(new_pages))
+            new_pages.sort()
 
-#Counts by category
-print(Counter(all_categories))
+    #Data check
+    if not len(all_index_numbers) == len(all_categories) == len(set(all_index_numbers)):
+        raise Exception('Something is wrong with the all_index_numbers list!')
+
+    #Counts by category
+    print(Counter(all_categories))
+
+    init_food_list = [{'index': all_index_numbers[i], 'category': all_categories[i]} for i in range(len(all_index_numbers))]
+    #Write to csv
+    keys = init_food_list[0].keys()
+    with open(food_indices_filename, 'w', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(init_food_list)
+    print(f"Food Indices scrape complete and new file written.")
 
 
 ################################################################
@@ -142,13 +190,15 @@ print(Counter(all_categories))
 # Write to csv                                                 #
 ################################################################
 
-food_list = [scrape_stilltasty(all_index_numbers[i],all_categories[i]) for i in range(len(all_index_numbers[:100]))]
+food_items_filename = data_folder+'stilltasty_food_items.csv'
+
+food_list = [scrape_stilltasty(all_index_numbers[i],all_categories[i]) for i in range(len(all_index_numbers))]
 
 #Write to csv
 keys = food_list[0].keys()
-with open('data/stilltasty_food_items.csv', 'w', newline='') as output_file:
+with open(food_items_filename, 'w', newline='') as output_file:
     dict_writer = csv.DictWriter(output_file, keys)
     dict_writer.writeheader()
     dict_writer.writerows(food_list)
 
-print('All items have been scraped and store in data/stilltasty_food_items.csv')
+print('All food items have been scraped and a new file written')
