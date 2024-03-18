@@ -2,29 +2,18 @@ from app import db
 from datetime import datetime
 from enum import Enum
 
-
+#Should match backend\webscrape\data\stilltasty_food_categories.csv
 class Category(Enum):
-    DAIRY = 'Dairy'
-    PRODUCE = 'Produce'
-    MEAT = 'Meat'
-    SEAFOOD = 'Seafood'
-    BAKERY = 'Bakery'
+    FRUITS = 'Fruits'
+    VEGETABLES = 'Vegetables'
+    DAIRY_AND_EGGS = 'Dairy & Eggs'
+    MEAT_AND_POULTRY = 'Meat & Poultry'
+    FISH_AND_SHELLFISH = 'Fish & Shellfish'
+    NUTS,_GRAINS_AND_PASTA = 'Nuts, Grains & Pasta'
+    CONDIMENTS_AND_OILS = 'Condiments & Oils'
+    SNACKS_AND_BAKED_GOODS = 'Snacks & Baked Goods'
+    HERBS_AND_SPICES = 'Herbs & Spices'
     BEVERAGES = 'Beverages'
-    FROZEN_FOODS = 'Frozen Foods'
-    BREAD = 'Bread'
-    CANNED_GOODS = 'Canned Goods'
-    GRAINS_AND_PASTA = 'Grains and Pasta'
-    CONDIMENTS_AND_SAUCES = 'Condiments and Sauces'
-    SNACKS_AND_CHIPS = 'Snacks and Chips'
-    BEVERAGES = 'Beverages'
-    FROZEN_FOODS = 'Frozen Foods'
-    DELI_AND_PREPARED_FOODS = 'Deli and Prepared Foods'
-    BREAKFAST_FOODS = 'Breakfast Foods'
-    BAKING_SUPPLIES = 'Baking Supplies'
-    SPICES_AND_SEASONINGS = 'Spices and Seasonings'
-    COOKING_OILS_AND_VINEGARS = 'Cooking Oils and Vinegars'
-    HEALTH_AND_WELLNESS_PRODUCTS = 'Health and Wellness Products'
-    MISCELLANEOUS_ITEMS = 'Miscellaneous Items'
 
 
 class Status(Enum):
@@ -55,16 +44,24 @@ class Supplier(db.Model):
     AMAZON = 'Amazon'
     FRED_MEYER = 'Fred Meyer'
     FARMERS_MARKET = 'Farmers Market'
+    OTHER = 'Other'
 
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.Enum(Category), nullable=False)
+    food_tips = db.Column(db.String(1000), nullable=False)
+    url = db.Column(db.String(100), nullable=False)
+    refrigerator_min_shelf_life = db.Column(db.Integer, nullable=False)
+    refrigerator_max_shelf_life = db.Column(db.Integer, nullable=False)
+    pantry_min_shelf_life = db.Column(db.Integer, nullable=False)
+    pantry_max_shelf_life = db.Column(db.Integer, nullable=False)
+    freezer_min_shelf_life = db.Column(db.Integer, nullable=False)
+    freezer_max_shelf_life = db.Column(db.Integer, nullable=False)
+    storage_locations = db.Column(db.String(100), nullable=False)
     unit_of_measure = db.Column(db.Enum(Unit_Of_Measure), nullable=False)
-    min_shelf_life = db.Column(db.Integer, nullable=False)
-    max_shelf_life = db.Column(db.Integer, nullable=False)
-    
+
     def __repr__(self):
         return f"Item('{self.name}', '{self.category}')"
 
@@ -79,6 +76,7 @@ class Inventory_Item(db.Model):
     supplier = db.Column(db.Enum(Supplier), nullable=False)
     expiration_date = db.Column(db.Date)
     status = db.Column(db.Enum(Status), nullable=False)
+    note = db.Column(db.String(1000))
     
     def __repr__(self):
         return f"Inventory_Item('{self.item.name}', '{self.item.category.name}', '{self.storage_location}')"
@@ -90,8 +88,10 @@ class Inventory_History(db.Model):
     inventory_item = db.relationship('Inventory_Item', backref=db.backref('history', lazy=True))
     update_status = db.Column(db.Boolean)
     update_quantity = db.Column(db.Boolean)
-    status = db.Column(db.Enum(Status), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
+    update_location = db.Column(db.Boolean)
+    status = db.Column(db.Enum(Status))
+    quantity = db.Column(db.Integer)
+    storage_location = db.Column(db.Enum(Storage_Location))
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self):
